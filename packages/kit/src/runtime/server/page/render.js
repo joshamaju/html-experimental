@@ -61,11 +61,15 @@ export async function render_response({
 		}
 	}
 
-	const { client } = manifest._;
+	// const { client } = manifest._;
 
-	const modulepreloads = new Set(client.imports);
-	const stylesheets = new Set(client.stylesheets);
-	const fonts = new Set(client.fonts);
+	// const modulepreloads = new Set(client.imports);
+	// const stylesheets = new Set(client.stylesheets);
+	// const fonts = new Set(client.fonts);
+
+	const modulepreloads = new Set();
+	const stylesheets = new Set();
+	const fonts = new Set();
 
 	/** @type {Set<string>} */
 	const link_header_preloads = new Set();
@@ -76,10 +80,13 @@ export async function render_response({
 
 	let rendered;
 
-	const form_value =
-		action_result?.type === 'success' || action_result?.type === 'failure'
-			? action_result.data ?? null
-			: null;
+	/** @type {any} */
+	let rendered_html;
+
+	// const form_value =
+	// 	action_result?.type === 'success' || action_result?.type === 'failure'
+	// 		? action_result.data ?? null
+	// 		: null;
 
 	/** @type {string} */
 	let base = paths.base;
@@ -115,16 +122,20 @@ export async function render_response({
 
 		/** @type {Record<string, any>} */
 		const props = {
-			stores: {
-				page: writable(null),
-				navigating: writable(null),
-				updated
-			},
-			constructors: await Promise.all(branch.map(({ node }) => node.component())),
-			form: form_value
+			// stores: {
+			// 	page: writable(null),
+			// 	navigating: writable(null),
+			// 	updated
+			// },
+			base,
+			assets,
+			constructors: await Promise.all(branch.map(({ node }) => node.component()))
+			// form: form_value
 		};
 
 		let data = {};
+
+		// console.log('branch: ', branch[1]);
 
 		// props_n (instead of props[n]) makes it easy to avoid
 		// unnecessary updates for layout components
@@ -139,8 +150,8 @@ export async function render_response({
 			route: event.route,
 			status,
 			url: event.url,
-			data,
-			form: form_value
+			data
+			// form: form_value
 		};
 
 		// use relative paths during rendering, so that the resulting HTML is as
@@ -165,6 +176,10 @@ export async function render_response({
 				return fetch(info, init);
 			};
 
+			rendered_html = options.root.render(props);
+
+			console.log('Props: ', rendered_html);
+
 			try {
 				rendered = options.root.render(props);
 			} finally {
@@ -179,17 +194,18 @@ export async function render_response({
 			}
 		}
 
-		for (const { node } of branch) {
-			for (const url of node.imports) modulepreloads.add(url);
-			for (const url of node.stylesheets) stylesheets.add(url);
-			for (const url of node.fonts) fonts.add(url);
+		// for (const { node } of branch) {
+		// 	for (const url of node.imports) modulepreloads.add(url);
+		// 	for (const url of node.stylesheets) stylesheets.add(url);
+		// 	for (const url of node.fonts) fonts.add(url);
 
-			if (node.inline_styles) {
-				Object.entries(await node.inline_styles()).forEach(([k, v]) => inline_styles.set(k, v));
-			}
-		}
+		// 	if (node.inline_styles) {
+		// 		Object.entries(await node.inline_styles()).forEach(([k, v]) => inline_styles.set(k, v));
+		// 	}
+		// }
 	} else {
 		rendered = { head: '', html: '', css: { code: '', map: null } };
+		rendered_html = '';
 	}
 
 	let head = '';
@@ -210,281 +226,283 @@ export async function render_response({
 		return `${assets}/${path}`;
 	};
 
-	if (inline_styles.size > 0) {
-		const content = Array.from(inline_styles.values()).join('\n');
+	// if (inline_styles.size > 0) {
+	// 	const content = Array.from(inline_styles.values()).join('\n');
 
-		const attributes = __SVELTEKIT_DEV__ ? [' data-sveltekit'] : [];
-		if (csp.style_needs_nonce) attributes.push(` nonce="${csp.nonce}"`);
+	// 	const attributes = __SVELTEKIT_DEV__ ? [' data-sveltekit'] : [];
+	// 	if (csp.style_needs_nonce) attributes.push(` nonce="${csp.nonce}"`);
 
-		csp.add_style(content);
+	// 	csp.add_style(content);
 
-		head += `\n\t<style${attributes.join('')}>${content}</style>`;
-	}
+	// 	head += `\n\t<style${attributes.join('')}>${content}</style>`;
+	// }
 
-	for (const dep of stylesheets) {
-		const path = prefixed(dep);
+	// for (const dep of stylesheets) {
+	// 	const path = prefixed(dep);
 
-		const attributes = ['rel="stylesheet"'];
+	// 	const attributes = ['rel="stylesheet"'];
 
-		if (inline_styles.has(dep)) {
-			// don't load stylesheets that are already inlined
-			// include them in disabled state so that Vite can detect them and doesn't try to add them
-			attributes.push('disabled', 'media="(max-width: 0)"');
-		} else {
-			if (resolve_opts.preload({ type: 'css', path })) {
-				const preload_atts = ['rel="preload"', 'as="style"'];
-				link_header_preloads.add(`<${encodeURI(path)}>; ${preload_atts.join(';')}; nopush`);
-			}
-		}
+	// 	if (inline_styles.has(dep)) {
+	// 		// don't load stylesheets that are already inlined
+	// 		// include them in disabled state so that Vite can detect them and doesn't try to add them
+	// 		attributes.push('disabled', 'media="(max-width: 0)"');
+	// 	} else {
+	// 		if (resolve_opts.preload({ type: 'css', path })) {
+	// 			const preload_atts = ['rel="preload"', 'as="style"'];
+	// 			link_header_preloads.add(`<${encodeURI(path)}>; ${preload_atts.join(';')}; nopush`);
+	// 		}
+	// 	}
 
-		head += `\n\t\t<link href="${path}" ${attributes.join(' ')}>`;
-	}
+	// 	head += `\n\t\t<link href="${path}" ${attributes.join(' ')}>`;
+	// }
 
-	for (const dep of fonts) {
-		const path = prefixed(dep);
+	// for (const dep of fonts) {
+	// 	const path = prefixed(dep);
 
-		if (resolve_opts.preload({ type: 'font', path })) {
-			const ext = dep.slice(dep.lastIndexOf('.') + 1);
-			const attributes = [
-				'rel="preload"',
-				'as="font"',
-				`type="font/${ext}"`,
-				`href="${path}"`,
-				'crossorigin'
-			];
+	// 	if (resolve_opts.preload({ type: 'font', path })) {
+	// 		const ext = dep.slice(dep.lastIndexOf('.') + 1);
+	// 		const attributes = [
+	// 			'rel="preload"',
+	// 			'as="font"',
+	// 			`type="font/${ext}"`,
+	// 			`href="${path}"`,
+	// 			'crossorigin'
+	// 		];
 
-			head += `\n\t\t<link ${attributes.join(' ')}>`;
-		}
-	}
+	// 		head += `\n\t\t<link ${attributes.join(' ')}>`;
+	// 	}
+	// }
 
-	const global = __SVELTEKIT_DEV__ ? `__sveltekit_dev` : `__sveltekit_${options.version_hash}`;
+	// const global = __SVELTEKIT_DEV__ ? `__sveltekit_dev` : `__sveltekit_${options.version_hash}`;
 
-	const { data, chunks } = get_data(
-		event,
-		options,
-		branch.map((b) => b.server_data),
-		global
-	);
+	// const { data, chunks } = get_data(
+	// 	event,
+	// 	options,
+	// 	branch.map((b) => b.server_data),
+	// 	global
+	// );
 
-	if (page_config.ssr && page_config.csr) {
-		body += `\n\t\t\t${fetched
-			.map((item) =>
-				serialize_data(item, resolve_opts.filterSerializedResponseHeaders, !!state.prerendering)
-			)
-			.join('\n\t\t\t')}`;
-	}
+	// if (page_config.ssr && page_config.csr) {
+	// 	body += `\n\t\t\t${fetched
+	// 		.map((item) =>
+	// 			serialize_data(item, resolve_opts.filterSerializedResponseHeaders, !!state.prerendering)
+	// 		)
+	// 		.join('\n\t\t\t')}`;
+	// }
 
-	if (page_config.csr) {
-		const included_modulepreloads = Array.from(modulepreloads, (dep) => prefixed(dep)).filter(
-			(path) => resolve_opts.preload({ type: 'js', path })
-		);
+	// if (page_config.csr) {
+	// 	const included_modulepreloads = Array.from(modulepreloads, (dep) => prefixed(dep)).filter(
+	// 		(path) => resolve_opts.preload({ type: 'js', path })
+	// 	);
 
-		for (const path of included_modulepreloads) {
-			// see the kit.output.preloadStrategy option for details on why we have multiple options here
-			link_header_preloads.add(`<${encodeURI(path)}>; rel="modulepreload"; nopush`);
-			if (options.preload_strategy !== 'modulepreload') {
-				head += `\n\t\t<link rel="preload" as="script" crossorigin="anonymous" href="${path}">`;
-			} else if (state.prerendering) {
-				head += `\n\t\t<link rel="modulepreload" href="${path}">`;
-			}
-		}
+	// 	for (const path of included_modulepreloads) {
+	// 		// see the kit.output.preloadStrategy option for details on why we have multiple options here
+	// 		link_header_preloads.add(`<${encodeURI(path)}>; rel="modulepreload"; nopush`);
+	// 		if (options.preload_strategy !== 'modulepreload') {
+	// 			head += `\n\t\t<link rel="preload" as="script" crossorigin="anonymous" href="${path}">`;
+	// 		} else if (state.prerendering) {
+	// 			head += `\n\t\t<link rel="modulepreload" href="${path}">`;
+	// 		}
+	// 	}
 
-		const blocks = [];
+	// 	const blocks = [];
 
-		const properties = [
-			paths.assets && `assets: ${s(paths.assets)}`,
-			`base: ${base_expression}`,
-			`env: ${s(public_env)}`
-		].filter(Boolean);
+	// 	const properties = [
+	// 		paths.assets && `assets: ${s(paths.assets)}`,
+	// 		`base: ${base_expression}`,
+	// 		`env: ${s(public_env)}`
+	// 	].filter(Boolean);
 
-		if (chunks) {
-			blocks.push(`const deferred = new Map();`);
+	// 	if (chunks) {
+	// 		blocks.push(`const deferred = new Map();`);
 
-			properties.push(`defer: (id) => new Promise((fulfil, reject) => {
-							deferred.set(id, { fulfil, reject });
-						})`);
+	// 		properties.push(`defer: (id) => new Promise((fulfil, reject) => {
+	// 						deferred.set(id, { fulfil, reject });
+	// 					})`);
 
-			properties.push(`resolve: ({ id, data, error }) => {
-							const { fulfil, reject } = deferred.get(id);
-							deferred.delete(id);
+	// 		properties.push(`resolve: ({ id, data, error }) => {
+	// 						const { fulfil, reject } = deferred.get(id);
+	// 						deferred.delete(id);
 
-							if (error) reject(error);
-							else fulfil(data);
-						}`);
-		}
+	// 						if (error) reject(error);
+	// 						else fulfil(data);
+	// 					}`);
+	// 	}
 
-		blocks.push(`${global} = {
-						${properties.join(',\n\t\t\t\t\t\t')}
-					};`);
+	// 	blocks.push(`${global} = {
+	// 					${properties.join(',\n\t\t\t\t\t\t')}
+	// 				};`);
 
-		const args = [`app`, `element`];
+	// 	const args = [`app`, `element`];
 
-		blocks.push(`const element = document.currentScript.parentElement;`);
+	// 	blocks.push(`const element = document.currentScript.parentElement;`);
 
-		if (page_config.ssr) {
-			const serialized = { form: 'null', error: 'null' };
+	// 	if (page_config.ssr) {
+	// 		const serialized = { form: 'null', error: 'null' };
 
-			blocks.push(`const data = ${data};`);
+	// 		blocks.push(`const data = ${data};`);
 
-			if (form_value) {
-				serialized.form = uneval_action_response(
-					form_value,
-					/** @type {string} */ (event.route.id)
-				);
-			}
+	// 		// if (form_value) {
+	// 		// 	serialized.form = uneval_action_response(
+	// 		// 		form_value,
+	// 		// 		/** @type {string} */ (event.route.id)
+	// 		// 	);
+	// 		// }
 
-			if (error) {
-				serialized.error = devalue.uneval(error);
-			}
+	// 		if (error) {
+	// 			serialized.error = devalue.uneval(error);
+	// 		}
 
-			const hydrate = [
-				`node_ids: [${branch.map(({ node }) => node.index).join(', ')}]`,
-				`data`,
-				`form: ${serialized.form}`,
-				`error: ${serialized.error}`
-			];
+	// 		const hydrate = [
+	// 			`node_ids: [${branch.map(({ node }) => node.index).join(', ')}]`,
+	// 			`data`,
+	// 			// `form: ${serialized.form}`,
+	// 			`error: ${serialized.error}`
+	// 		];
 
-			if (status !== 200) {
-				hydrate.push(`status: ${status}`);
-			}
+	// 		if (status !== 200) {
+	// 			hydrate.push(`status: ${status}`);
+	// 		}
 
-			if (options.embedded) {
-				hydrate.push(`params: ${devalue.uneval(event.params)}`, `route: ${s(event.route)}`);
-			}
+	// 		if (options.embedded) {
+	// 			hydrate.push(`params: ${devalue.uneval(event.params)}`, `route: ${s(event.route)}`);
+	// 		}
 
-			args.push(`{\n\t\t\t\t\t\t\t${hydrate.join(',\n\t\t\t\t\t\t\t')}\n\t\t\t\t\t\t}`);
-		}
+	// 		args.push(`{\n\t\t\t\t\t\t\t${hydrate.join(',\n\t\t\t\t\t\t\t')}\n\t\t\t\t\t\t}`);
+	// 	}
 
-		blocks.push(`Promise.all([
-						import(${s(prefixed(client.start))}),
-						import(${s(prefixed(client.app))})
-					]).then(([kit, app]) => {
-						kit.start(${args.join(', ')});
-					});`);
+	// 	// blocks.push(`Promise.all([
+	// 	// 				import(${s(prefixed(client.start))}),
+	// 	// 				import(${s(prefixed(client.app))})
+	// 	// 			]).then(([kit, app]) => {
+	// 	// 				kit.start(${args.join(', ')});
+	// 	// 			});`);
 
-		if (options.service_worker) {
-			const opts = __SVELTEKIT_DEV__ ? `, { type: 'module' }` : '';
+	// 	if (options.service_worker) {
+	// 		const opts = __SVELTEKIT_DEV__ ? `, { type: 'module' }` : '';
 
-			// we use an anonymous function instead of an arrow function to support
-			// older browsers (https://github.com/sveltejs/kit/pull/5417)
-			blocks.push(`if ('serviceWorker' in navigator) {
-						addEventListener('load', function () {
-							navigator.serviceWorker.register('${prefixed('service-worker.js')}'${opts});
-						});
-					}`);
-		}
+	// 		// we use an anonymous function instead of an arrow function to support
+	// 		// older browsers (https://github.com/sveltejs/kit/pull/5417)
+	// 		blocks.push(`if ('serviceWorker' in navigator) {
+	// 					addEventListener('load', function () {
+	// 						navigator.serviceWorker.register('${prefixed('service-worker.js')}'${opts});
+	// 					});
+	// 				}`);
+	// 	}
 
-		const init_app = `
-				{
-					${blocks.join('\n\n\t\t\t\t\t')}
-				}
-			`;
-		csp.add_script(init_app);
+	// 	const init_app = `
+	// 			{
+	// 				${blocks.join('\n\n\t\t\t\t\t')}
+	// 			}
+	// 		`;
+	// 	csp.add_script(init_app);
 
-		body += `\n\t\t\t<script${
-			csp.script_needs_nonce ? ` nonce="${csp.nonce}"` : ''
-		}>${init_app}</script>\n\t\t`;
-	}
+	// 	body += `\n\t\t\t<script${
+	// 		csp.script_needs_nonce ? ` nonce="${csp.nonce}"` : ''
+	// 	}>${init_app}</script>\n\t\t`;
+	// }
 
 	const headers = new Headers({
 		'x-sveltekit-page': 'true',
 		'content-type': 'text/html'
 	});
 
-	if (state.prerendering) {
-		// TODO read headers set with setHeaders and convert into http-equiv where possible
-		const http_equiv = [];
+	// if (state.prerendering) {
+	// 	// TODO read headers set with setHeaders and convert into http-equiv where possible
+	// 	const http_equiv = [];
 
-		const csp_headers = csp.csp_provider.get_meta();
-		if (csp_headers) {
-			http_equiv.push(csp_headers);
-		}
+	// 	const csp_headers = csp.csp_provider.get_meta();
+	// 	if (csp_headers) {
+	// 		http_equiv.push(csp_headers);
+	// 	}
 
-		if (state.prerendering.cache) {
-			http_equiv.push(`<meta http-equiv="cache-control" content="${state.prerendering.cache}">`);
-		}
+	// 	if (state.prerendering.cache) {
+	// 		http_equiv.push(`<meta http-equiv="cache-control" content="${state.prerendering.cache}">`);
+	// 	}
 
-		if (http_equiv.length > 0) {
-			head = http_equiv.join('\n') + head;
-		}
-	} else {
-		const csp_header = csp.csp_provider.get_header();
-		if (csp_header) {
-			headers.set('content-security-policy', csp_header);
-		}
-		const report_only_header = csp.report_only_provider.get_header();
-		if (report_only_header) {
-			headers.set('content-security-policy-report-only', report_only_header);
-		}
+	// 	// if (http_equiv.length > 0) {
+	// 	// 	head = http_equiv.join('\n') + head;
+	// 	// }
+	// } else {
+	// 	const csp_header = csp.csp_provider.get_header();
+	// 	if (csp_header) {
+	// 		headers.set('content-security-policy', csp_header);
+	// 	}
+	// 	const report_only_header = csp.report_only_provider.get_header();
+	// 	if (report_only_header) {
+	// 		headers.set('content-security-policy-report-only', report_only_header);
+	// 	}
 
-		if (link_header_preloads.size) {
-			headers.set('link', Array.from(link_header_preloads).join(', '));
-		}
-	}
+	// 	if (link_header_preloads.size) {
+	// 		headers.set('link', Array.from(link_header_preloads).join(', '));
+	// 	}
+	// }
 
 	// add the content after the script/css links so the link elements are parsed first
-	head += rendered.head;
+	// head += rendered.head;
 
-	const html = options.templates.app({
-		head,
-		body,
-		assets,
-		nonce: /** @type {string} */ (csp.nonce),
-		env: public_env
-	});
+	// const html = options.templates.app({
+	// 	head,
+	// 	body,
+	// 	assets,
+	// 	nonce: /** @type {string} */ (csp.nonce),
+	// 	env: public_env
+	// });
 
 	// TODO flush chunks as early as we can
-	const transformed =
-		(await resolve_opts.transformPageChunk({
-			html,
-			done: true
-		})) || '';
+	// const transformed =
+	// 	(await resolve_opts.transformPageChunk({
+	// 		html,
+	// 		done: true
+	// 	})) || '';
 
-	if (!chunks) {
-		headers.set('etag', `"${hash(transformed)}"`);
-	}
+	// if (!chunks) {
+	// 	headers.set('etag', `"${hash(transformed)}"`);
+	// }
 
-	if (DEV) {
-		if (page_config.csr) {
-			if (transformed.split('<!--').length < html.split('<!--').length) {
-				// the \u001B stuff is ANSI codes, so that we don't need to add a library to the runtime
-				// https://svelte.dev/repl/1b3f49696f0c44c881c34587f2537aa2
-				console.warn(
-					"\u001B[1m\u001B[31mRemoving comments in transformPageChunk can break Svelte's hydration\u001B[39m\u001B[22m"
-				);
-			}
-		} else {
-			if (chunks) {
-				console.warn(
-					'\u001B[1m\u001B[31mReturning promises from server `load` functions will only work if `csr === true`\u001B[39m\u001B[22m'
-				);
-			}
-		}
-	}
+	// if (DEV) {
+	// 	if (page_config.csr) {
+	// 		if (transformed.split('<!--').length < html.split('<!--').length) {
+	// 			// the \u001B stuff is ANSI codes, so that we don't need to add a library to the runtime
+	// 			// https://svelte.dev/repl/1b3f49696f0c44c881c34587f2537aa2
+	// 			console.warn(
+	// 				"\u001B[1m\u001B[31mRemoving comments in transformPageChunk can break Svelte's hydration\u001B[39m\u001B[22m"
+	// 			);
+	// 		}
+	// 	} else {
+	// 		if (chunks) {
+	// 			console.warn(
+	// 				'\u001B[1m\u001B[31mReturning promises from server `load` functions will only work if `csr === true`\u001B[39m\u001B[22m'
+	// 			);
+	// 		}
+	// 	}
+	// }
 
-	return !chunks
-		? text(transformed, {
-				status,
-				headers
-		  })
-		: new Response(
-				new ReadableStream({
-					async start(controller) {
-						controller.enqueue(encoder.encode(transformed + '\n'));
-						for await (const chunk of chunks) {
-							controller.enqueue(encoder.encode(chunk));
-						}
-						controller.close();
-					},
+	return text(rendered_html, { status, headers });
 
-					type: 'bytes'
-				}),
-				{
-					headers: {
-						'content-type': 'text/html'
-					}
-				}
-		  );
+	// return !chunks
+	// 	? text(transformed, {
+	// 			status,
+	// 			headers
+	// 	  })
+	// 	: new Response(
+	// 			new ReadableStream({
+	// 				async start(controller) {
+	// 					controller.enqueue(encoder.encode(transformed + '\n'));
+	// 					for await (const chunk of chunks) {
+	// 						controller.enqueue(encoder.encode(chunk));
+	// 					}
+	// 					controller.close();
+	// 				},
+
+	// 				type: 'bytes'
+	// 			}),
+	// 			{
+	// 				headers: {
+	// 					'content-type': 'text/html'
+	// 				}
+	// 			}
+	// 	  );
 }
 
 /**

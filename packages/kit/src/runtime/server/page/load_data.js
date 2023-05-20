@@ -115,6 +115,7 @@ export async function load_server_data({ event, state, node, parent }) {
 	});
 
 	const data = result ? await unwrap_promises(result) : null;
+
 	if (__SVELTEKIT_DEV__) {
 		validate_load_response(data, /** @type {string} */ (event.route.id));
 	}

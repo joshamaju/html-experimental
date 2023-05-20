@@ -29,10 +29,10 @@ async function prerender({ out, manifest_path, metadata, verbose, env }) {
 	const manifest = (await import(pathToFileURL(manifest_path).href)).manifest;
 
 	/** @type {import('types').ServerInternalModule} */
-	const internal = await import(pathToFileURL(`${out}/server/internal.js`).href);
+	const internal = await import(pathToFileURL(`${out}/internal.js`).href);
 
 	/** @type {import('types').ServerModule} */
-	const { Server } = await import(pathToFileURL(`${out}/server/index.js`).href);
+	const { Server } = await import(pathToFileURL(`${out}/index.js`).href);
 
 	// configure `import { building } from '$app/environment'` —
 	// essential we do this before analysing the code
@@ -151,11 +151,12 @@ async function prerender({ out, manifest_path, metadata, verbose, env }) {
 		return file;
 	}
 
-	const files = new Set(walk(`${out}/client`).map(posixify));
+	const files = new Set(walk(`${out}`).map(posixify));
 
 	const immutable = `${config.appDir}/immutable`;
-	if (existsSync(`${out}/server/${immutable}`)) {
-		for (const file of walk(`${out}/server/${immutable}`)) {
+
+	if (existsSync(`${out}/${immutable}`)) {
+		for (const file of walk(`${out}/${immutable}`)) {
 			files.add(posixify(`${config.appDir}/immutable/${file}`));
 		}
 	}

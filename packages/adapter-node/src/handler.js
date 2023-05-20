@@ -173,6 +173,8 @@ function get_origin(headers) {
 export const handler = sequence(
 	[
 		serve(path.join(dir, 'client'), true),
+		serve(path.join(dir, 'client/_app'), true),
+		serve(path.join(dir, 'client/_app/immutable'), true),
 		serve(path.join(dir, 'static')),
 		serve_prerendered(),
 		ssr

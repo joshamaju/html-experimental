@@ -1,6 +1,7 @@
 import { relative_path, resolve_entry } from '../../utils/filesystem.js';
 import { s } from '../../utils/misc.js';
 import { dedent, write_if_changed } from './utils.js';
+import fs from 'node:fs';
 
 /**
  * Writes the client manifest to disk. The manifest is used to power the router. It contains the
@@ -8,9 +9,10 @@ import { dedent, write_if_changed } from './utils.js';
  * @param {import('types').ValidatedKitConfig} kit
  * @param {import('types').ManifestData} manifest_data
  * @param {string} output
+ * @param {import('vite').Manifest} client_manifest
  * @param {Array<{ has_server_load: boolean }>} [metadata]
  */
-export function write_client_manifest(kit, manifest_data, output, metadata) {
+export function write_client_manifest(kit, manifest_data, output, client_manifest, metadata) {
 	/**
 	 * Creates a module that exports a `CSRPageNode`
 	 * @param {import('types').PageNode} node
@@ -18,19 +20,16 @@ export function write_client_manifest(kit, manifest_data, output, metadata) {
 	function generate_node(node) {
 		const declarations = [];
 
-		if (node.universal) {
-			declarations.push(
-				`import * as universal from ${s(relative_path(`${output}/nodes`, node.universal))};`,
-				`export { universal };`
-			);
-		}
+		// if (node.universal) {
+		// 	declarations.push(
+		// 		`import * as universal from ${s(relative_path(`${output}/nodes`, node.universal))};`,
+		// 		`export { universal };`
+		// 	);
+		// }
 
 		if (node.component) {
-			declarations.push(
-				`export { default as component } from ${s(
-					relative_path(`${output}/nodes`, node.component)
-				)};`
-			);
+			const content = fs.readFileSync(node.component, 'utf-8');
+			declarations.push(`export const component = ${s(content)};`);
 		}
 
 		return declarations.join('\n');
@@ -129,7 +128,7 @@ export function write_client_manifest(kit, manifest_data, output, metadata) {
 				}(({ error }) => { console.error(error) }),
 			};
 
-			export { default as root } from '../root.svelte';
+			// export { default as root } from '../root.svelte';
 		`
 	);
 

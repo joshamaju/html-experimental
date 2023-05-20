@@ -1,4 +1,4 @@
-const param_pattern = /^(\[)?(\.\.\.)?(\w+)(?:=(\w+))?(\])?$/;
+const param_pattern = /^(\~)?(\.\.\.)?(\w+)(?:=(\w+))?(\~)?$/;
 
 /**
  * Creates the regex pattern, extracts parameter names, and generates types for a route
@@ -15,7 +15,7 @@ export function parse_route_id(id) {
 					`^${get_route_segments(id)
 						.map((segment) => {
 							// special case — /[...rest]/ could contain zero segments
-							const rest_match = /^\[\.\.\.(\w+)(?:=(\w+))?\]$/.exec(segment);
+							const rest_match = /^\~\.\.\.(\w+)(?:=(\w+))?\~$/.exec(segment);
 							if (rest_match) {
 								params.push({
 									name: rest_match[1],
@@ -27,7 +27,7 @@ export function parse_route_id(id) {
 								return '(?:/(.*))?';
 							}
 							// special case — /[[optional]]/ could contain zero segments
-							const optional_match = /^\[\[(\w+)(?:=(\w+))?\]\]$/.exec(segment);
+							const optional_match = /^\~\~(\w+)(?:=(\w+))?\~\~$/.exec(segment);
 							if (optional_match) {
 								params.push({
 									name: optional_match[1],
@@ -43,7 +43,7 @@ export function parse_route_id(id) {
 								return;
 							}
 
-							const parts = segment.split(/\[(.+?)\](?!\])/);
+							const parts = segment.split(/\~(.+?)\~(?!\~)/);
 							const result = parts
 								.map((content, i) => {
 									if (i % 2) {
@@ -96,7 +96,7 @@ export function parse_route_id(id) {
 	return { pattern, params };
 }
 
-const basic_param_pattern = /\[(\[)?(?:\.\.\.)?(\w+?)(?:=(\w+))?\]\]?/g;
+const basic_param_pattern = /\~(\~)?(?:\.\.\.)?(\w+?)(?:=(\w+))?\~\~?/g;
 
 /**
  * Parses a route ID, then resolves it to a path by replacing parameters with actual values from `entry`.
@@ -134,7 +134,7 @@ export function resolve_entry(id, entry) {
 	);
 }
 
-const optional_param_regex = /\/\[\[\w+?(?:=\w+)?\]\]/;
+const optional_param_regex = /\/\~\~\w+?(?:=\w+)?\~\~/;
 
 /**
  * Removes optional params from a route ID.

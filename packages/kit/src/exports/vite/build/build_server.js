@@ -13,22 +13,22 @@ import { normalizePath } from 'vite';
  * @param {import('rollup').OutputAsset[] | null} css
  */
 export function build_server_nodes(out, kit, manifest_data, server_manifest, client_manifest, css) {
-	mkdirp(`${out}/server/nodes`);
-	mkdirp(`${out}/server/stylesheets`);
+	mkdirp(`${out}/nodes`);
+	// mkdirp(`${out}/server/stylesheets`);
 
-	const stylesheet_lookup = new Map();
+	// const stylesheet_lookup = new Map();
 
-	if (css) {
-		css.forEach((asset) => {
-			if (asset.source.length < kit.inlineStyleThreshold) {
-				const index = stylesheet_lookup.size;
-				const file = `${out}/server/stylesheets/${index}.js`;
+	// if (css) {
+	// 	css.forEach((asset) => {
+	// 		if (asset.source.length < kit.inlineStyleThreshold) {
+	// 			const index = stylesheet_lookup.size;
+	// 			const file = `${out}/server/stylesheets/${index}.js`;
 
-				fs.writeFileSync(file, `// ${asset.fileName}\nexport default ${s(asset.source)};`);
-				stylesheet_lookup.set(asset.fileName, index);
-			}
-		});
-	}
+	// 			fs.writeFileSync(file, `// ${asset.fileName}\nexport default ${s(asset.source)};`);
+	// 			stylesheet_lookup.set(asset.fileName, index);
+	// 		}
+	// 	});
+	// }
 
 	manifest_data.nodes.forEach((node, i) => {
 		/** @type {string[]} */
@@ -49,18 +49,40 @@ export function build_server_nodes(out, kit, manifest_data, server_manifest, cli
 		const fonts = [];
 
 		if (node.component && client_manifest) {
+			const { file } = resolve_symlinks(client_manifest, node.component).chunk;
+
+			const content = fs.readFileSync(file, 'utf-8');
+
+			// `
+			// import {load} from "cheerio";
+
+			// export const component = async () => {
+			// 	return (result, {data, page}) => {
+			// 		const $ = load(\`${content}\`);
+
+			// 		const head = $('head');
+			// 		const body = $('body');
+
+			// 		const $result_head = load(result.head, {}, false);
+			// 		const $result_body = load(result.body, {}, false);
+
+			// 		$result_head('title').replaceWith($('title').html())
+
+			// 		return result;
+			// 	}
+			// }
+			// `
+
 			exports.push(
-				`export const component = async () => (await import('../${
-					resolve_symlinks(server_manifest, node.component).chunk.file
-				}')).default;`
+				'export const component = async () => ({render: ({data, page}) => `' + content + '`});'
 			);
 		}
 
-		if (node.universal) {
-			imports.push(`import * as universal from '../${server_manifest[node.universal].file}';`);
-			exports.push(`export { universal };`);
-			exports.push(`export const universal_id = ${s(node.universal)};`);
-		}
+		// if (node.universal) {
+		// 	imports.push(`import * as universal from '../${server_manifest[node.universal].file}';`);
+		// 	exports.push(`export { universal };`);
+		// 	exports.push(`export const universal_id = ${s(node.universal)};`);
+		// }
 
 		if (node.server) {
 			imports.push(`import * as server from '../${server_manifest[node.server].file}';`);
@@ -68,43 +90,40 @@ export function build_server_nodes(out, kit, manifest_data, server_manifest, cli
 			exports.push(`export const server_id = ${s(node.server)};`);
 		}
 
-		if (client_manifest && (node.universal || node.component)) {
-			const entry = find_deps(
-				client_manifest,
-				`${normalizePath(kit.outDir)}/generated/client-optimized/nodes/${i}.js`,
-				true
-			);
+		// if (client_manifest && (node.universal || node.component)) {
+		// 	const entry = find_deps(
+		// 		client_manifest,
+		// 		`${normalizePath(kit.outDir)}/generated/client-optimized/nodes/${i}.js`,
+		// 		true
+		// 	);
 
-			imported.push(...entry.imports);
-			stylesheets.push(...entry.stylesheets);
-			fonts.push(...entry.fonts);
-		}
+		// 	imported.push(...entry.imports);
+		// 	stylesheets.push(...entry.stylesheets);
+		// 	fonts.push(...entry.fonts);
+		// }
 
-		exports.push(
-			`export const imports = ${s(imported)};`,
-			`export const stylesheets = ${s(stylesheets)};`,
-			`export const fonts = ${s(fonts)};`
-		);
+		// exports.push(
+		// 	`export const imports = ${s(imported)};`,
+		// 	`export const stylesheets = ${s(stylesheets)};`,
+		// 	`export const fonts = ${s(fonts)};`
+		// );
 
-		/** @type {string[]} */
-		const styles = [];
+		// /** @type {string[]} */
+		// const styles = [];
 
-		stylesheets.forEach((file) => {
-			if (stylesheet_lookup.has(file)) {
-				const index = stylesheet_lookup.get(file);
-				const name = `stylesheet_${index}`;
-				imports.push(`import ${name} from '../stylesheets/${index}.js';`);
-				styles.push(`\t${s(file)}: ${name}`);
-			}
-		});
+		// stylesheets.forEach((file) => {
+		// 	if (stylesheet_lookup.has(file)) {
+		// 		const index = stylesheet_lookup.get(file);
+		// 		const name = `stylesheet_${index}`;
+		// 		imports.push(`import ${name} from '../stylesheets/${index}.js';`);
+		// 		styles.push(`\t${s(file)}: ${name}`);
+		// 	}
+		// });
 
-		if (styles.length > 0) {
-			exports.push(`export const inline_styles = () => ({\n${styles.join(',\n')}\n});`);
-		}
+		// if (styles.length > 0) {
+		// 	exports.push(`export const inline_styles = () => ({\n${styles.join(',\n')}\n});`);
+		// }
 
-		fs.writeFileSync(
-			`${out}/server/nodes/${i}.js`,
-			`${imports.join('\n')}\n\n${exports.join('\n')}\n`
-		);
+		fs.writeFileSync(`${out}/nodes/${i}.js`, `${imports.join('\n')}\n\n${exports.join('\n')}\n`);
 	});
 }

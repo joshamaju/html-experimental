@@ -338,12 +338,12 @@ function create_routes_and_nodes(cwd, config, fallback) {
 
 	if (!root.layout?.component) {
 		if (!root.layout) root.layout = { depth: 0, child_pages: [] };
-		root.layout.component = posixify(path.relative(cwd, `${fallback}/layout.svelte`));
+		root.layout.component = posixify(path.relative(cwd, `${fallback}/layout.html`));
 	}
 
 	if (!root.error?.component) {
 		if (!root.error) root.error = { depth: 0 };
-		root.error.component = posixify(path.relative(cwd, `${fallback}/error.svelte`));
+		root.error.component = posixify(path.relative(cwd, `${fallback}/error.html`));
 	}
 
 	// we do layouts/errors first as they are more likely to be reused,
@@ -352,7 +352,7 @@ function create_routes_and_nodes(cwd, config, fallback) {
 	for (const route of routes) {
 		if (route.layout) {
 			if (!route.layout?.component) {
-				route.layout.component = posixify(path.relative(cwd, `${fallback}/layout.svelte`));
+				route.layout.component = posixify(path.relative(cwd, `${fallback}/layout.html`));
 			}
 			nodes.push(route.layout);
 		}

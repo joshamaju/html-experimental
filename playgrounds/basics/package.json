@@ -1,0 +1,37 @@
+{
+	"name": "test-basics",
+	"private": true,
+	"version": "0.0.2-next.0",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"serve:prod": "vercel dev",
+		"check": "svelte-kit sync && tsc && svelte-check",
+		"test": "node test/setup.js && pnpm test:dev && pnpm test:build",
+		"test:dev": "rimraf test/errors.json && cross-env DEV=true playwright test",
+		"test:build": "rimraf test/errors.json && playwright test",
+		"test:cross-platform:dev": "node test/setup.js && rimraf test/errors.json && cross-env DEV=true playwright test test/cross-platform/",
+		"test:cross-platform:build": "node test/setup.js && rimraf test/errors.json && playwright test test/cross-platform/"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-node": "workspace:^",
+		"@sveltejs/adapter-vercel": "workspace:^",
+		"@sveltejs/kit": "workspace:^",
+		"cross-env": "^7.0.3",
+		"rimraf": "^5.0.0",
+		"svelte": "^3.56.0",
+		"svelte-check": "^3.0.2",
+		"typescript": "^4.9.4",
+		"vercel": "^29.3.6",
+		"vite": "^4.3.0"
+	},
+	"type": "module",
+	"dependencies": {
+		"@barba/core": "^2.9.7",
+		"@hotwired/turbo": "^7.3.0",
+		"domino": "^2.1.6",
+		"htmldom": "^4.0.11",
+		"xmldom": "^0.6.0"
+	}
+}

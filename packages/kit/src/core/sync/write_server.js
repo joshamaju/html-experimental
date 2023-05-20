@@ -25,7 +25,7 @@ const server_template = ({
 	template,
 	error_page
 }) => `
-import root from '../root.svelte';
+import root from '../root.js';
 import { set_building } from '__sveltekit/environment';
 import { set_assets } from '__sveltekit/paths';
 import { set_private_env, set_public_env } from '${runtime_directory}/shared-server.js';

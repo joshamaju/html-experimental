@@ -145,7 +145,8 @@ export function create_builder({
 		},
 
 		async generateFallback(dest) {
-			const manifest_path = `${config.kit.outDir}/output/server/manifest-full.js`;
+			const manifest_path = `${config.kit.outDir}/output/manifest-full.js`;
+
 			const env = get_env(config.kit.env, 'production');
 
 			const fallback = await generate_fallback({
@@ -171,11 +172,11 @@ export function create_builder({
 		},
 
 		getClientDirectory() {
-			return `${config.kit.outDir}/output/client`;
+			return `${config.kit.outDir}/output/${config.kit.appDir}/immutable`;
 		},
 
 		getServerDirectory() {
-			return `${config.kit.outDir}/output/server`;
+			return `${config.kit.outDir}/output`;
 		},
 
 		getAppPath() {
@@ -184,10 +185,10 @@ export function create_builder({
 
 		writeClient(dest) {
 			const server_assets = copy(
-				`${config.kit.outDir}/output/server/${config.kit.appDir}/immutable/assets`,
-				join(dest, config.kit.appDir, 'immutable/assets')
-			).map((filename) => join(config.kit.appDir, 'immutable/assets', filename));
-			const client_assets = copy(`${config.kit.outDir}/output/client`, dest);
+				`${config.kit.outDir}/output/${config.kit.appDir}/immutable`,
+				join(dest, config.kit.appDir, 'immutable')
+			).map((filename) => join(config.kit.appDir, 'immutable', filename));
+			const client_assets = copy(`${config.kit.outDir}/output`, dest);
 			return Array.from(new Set([...server_assets, ...client_assets]));
 		},
 
@@ -205,7 +206,7 @@ export function create_builder({
 		},
 
 		writeServer(dest) {
-			return copy(`${config.kit.outDir}/output/server`, dest);
+			return copy(`${config.kit.outDir}/output`, dest);
 		}
 	};
 }

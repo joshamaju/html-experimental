@@ -39,7 +39,7 @@ const directives = object({
 /** @type {Validator} */
 const options = object(
 	{
-		extensions: validate(['.svelte'], (input, keypath) => {
+		extensions: validate(['.html'], (input, keypath) => {
 			if (!Array.isArray(input) || !input.every((page) => typeof page === 'string')) {
 				throw new Error(`${keypath} must be an array of strings`);
 			}

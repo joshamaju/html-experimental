@@ -5,10 +5,11 @@ import { s } from '../../../utils/misc.js';
 import { get_config_aliases } from '../utils.js';
 import { assets_base } from './utils.js';
 
+import esbuild from 'esbuild';
+
 /**
  * @param {string} out
  * @param {import('types').ValidatedKitConfig} kit
- * @param {import('vite').ResolvedConfig} vite_config
  * @param {import('types').ManifestData} manifest_data
  * @param {string} service_worker_entry_file
  * @param {import('types').Prerendered} prerendered
@@ -17,13 +18,13 @@ import { assets_base } from './utils.js';
 export async function build_service_worker(
 	out,
 	kit,
-	vite_config,
 	manifest_data,
 	service_worker_entry_file,
 	prerendered,
 	client_manifest
 ) {
 	const build = new Set();
+
 	for (const key in client_manifest) {
 		const { file, css = [], assets = [] } = client_manifest[key];
 		build.add(file);
@@ -63,26 +64,44 @@ export async function build_service_worker(
 		`
 	);
 
-	await vite.build({
-		base: assets_base(kit),
-		build: {
-			lib: {
-				entry: /** @type {string} */ (service_worker_entry_file),
-				name: 'app',
-				formats: ['es']
-			},
-			rollupOptions: {
-				output: {
-					entryFileNames: 'service-worker.js'
-				}
-			},
-			outDir: `${out}/client`,
-			emptyOutDir: false
-		},
-		define: vite_config.define,
-		configFile: false,
-		resolve: {
-			alias: [...get_config_aliases(kit), { find: '$service-worker', replacement: service_worker }]
-		}
-	});
+	/** @type {import('esbuild').BuildOptions} */
+const esbuild_config = {
+	outdir: out,
+	bundle: true,
+	format: 'esm',
+	platform: 'browser',
+	loader: { '.ts': 'ts' },
+	publicPath: assets_base(kit),
+	entryNames: 'service-worker.js',
+	entryPoints: [service_worker_entry_file],
+	alias: {
+		'$service-worker': service_worker,
+		...Object.fromEntries(get_config_aliases(kit).map((alias) => [alias.find, alias.replacement]))
+	}
+};
+
+await esbuild.build(esbuild_config);
+
+	// await vite.build({
+	// 	base: assets_base(kit),
+	// 	build: {
+	// 		lib: {
+	// 			entry: /** @type {string} */ (service_worker_entry_file),
+	// 			name: 'app',
+	// 			formats: ['es']
+	// 		},
+	// 		rollupOptions: {
+	// 			output: {
+	// 				entryFileNames: 'service-worker.js'
+	// 			}
+	// 		},
+	// 		outDir: `${out}/client`,
+	// 		emptyOutDir: false
+	// 	},
+	// 	define: vite_config.define,
+	// 	configFile: false,
+	// 	resolve: {
+	// 		alias: [...get_config_aliases(kit), { find: '$service-worker', replacement: service_worker }]
+	// 	}
+	// });
 }

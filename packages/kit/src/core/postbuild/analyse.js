@@ -32,7 +32,7 @@ async function analyse({ manifest_path, env }) {
 	const server_root = join(config.outDir, 'output');
 
 	/** @type {import('types').ServerInternalModule} */
-	const internal = await import(pathToFileURL(`${server_root}/server/internal.js`).href);
+	const internal = await import(pathToFileURL(`${server_root}/internal.js`).href);
 
 	if (should_polyfill) {
 		installPolyfills();
